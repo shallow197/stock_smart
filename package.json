@@ -1,14 +1,16 @@
 {
-  "name": "gestion-stock",
+  "name": "ecostock",
   "private": true,
   "version": "1.0.0",
+  "description": "EcoStock — PWA de gestion de stock, ventes et crédits pour commerçants (Laravel + React).",
   "scripts": {
-    "dev": "concurrently \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\"",
-    "dev:backend": "npm --prefix backend run dev",
-    "dev:frontend": "npm --prefix frontend run dev"
+    "dev": "concurrently -k -n API,WEB -c green,cyan \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "cd api && php -S 127.0.0.1:8000 dev-server.php",
+    "dev:web": "npm --prefix frontend run dev",
+    "migrate": "cd api && php artisan migrate",
+    "seed": "cd api && php artisan migrate:fresh --seed"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"
   }
 }
-

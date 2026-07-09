@@ -1,12 +1,199 @@
 @import "tailwindcss";
 
+/* ============================================================
+   EcoStock — Design system
+   Palette verte (croissance, stabilité), codage couleur des
+   statuts : vert = normal, ambre = attention, rouge = critique,
+   bleu = crédit. Mobile-first, référence 390 px.
+   ============================================================ */
+@theme {
+  --color-brand-50: #edf6f2;
+  --color-brand-100: #d3e9e0;
+  --color-brand-200: #a7d3c2;
+  --color-brand-300: #6fb89e;
+  --color-brand-400: #3e9c7c;
+  --color-brand-500: #2e8b57;
+  --color-brand-600: #1e5f4f;
+  --color-brand-700: #184c40;
+  --color-brand-800: #123a31;
+  --color-brand-900: #0d2a24;
+
+  --color-canvas: #f3f6f4;
+  --color-surface: #ffffff;
+  --color-ink: #10201b;
+  --color-muted: #64766f;
+  --color-line: #e5ece9;
+
+  --color-ok: #2e8b57;
+  --color-ok-soft: #e3f3ea;
+  --color-warn: #b45309;
+  --color-warn-soft: #fdf0d9;
+  --color-danger: #dc2626;
+  --color-danger-soft: #fde4e4;
+  --color-credit: #2563eb;
+  --color-credit-soft: #e2ebfd;
+
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --radius-xl: 1rem;
+  --shadow-card: 0 1px 2px rgba(16, 32, 27, 0.04), 0 6px 20px -12px rgba(16, 32, 27, 0.18);
+}
+
 html,
 body,
 #root {
   height: 100%;
 }
 
-body {
-  margin: 0;
+html {
+  background: var(--color-canvas);
 }
 
+body {
+  margin: 0;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Chiffres alignés pour les montants */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Conteneur applicatif : pleine largeur, mobile-first.
+   Sur desktop, le contenu occupe toute la zone à droite de la barre latérale,
+   plafonné à une largeur confortable et centré. */
+.app-frame {
+  width: 100%;
+  margin: 0 auto;
+  min-height: 100%;
+  background: var(--color-canvas);
+  position: relative;
+}
+
+/* Écrans d'authentification : colonne étroite centrée. */
+.app-narrow {
+  width: 100%;
+  max-width: 27rem;
+  margin: 0 auto;
+}
+@media (min-width: 480px) {
+  body {
+    background:
+      radial-gradient(130% 70% at 50% -10%, #e9f2ed 0%, #eef3f0 45%, #e9efeb 100%);
+  }
+}
+
+/* Barre de défilement discrète */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cdd8d3 transparent;
+}
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #cdd8d3;
+  border-radius: 9999px;
+}
+
+@layer components {
+  /* Cartes */
+  .card {
+    @apply bg-surface rounded-2xl border border-line;
+    box-shadow: var(--shadow-card);
+  }
+
+  /* Boutons — base commune (sans @apply de classe custom, compat Tailwind v4) */
+  .btn-primary,
+  .btn-secondary,
+  .btn-ghost,
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 h-12 font-semibold text-[15px] transition active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none select-none;
+  }
+  .btn-primary {
+    @apply text-white;
+    background: linear-gradient(180deg, var(--color-brand-500) 0%, var(--color-brand-600) 100%);
+    box-shadow: 0 8px 18px -8px rgba(30, 95, 79, 0.6);
+  }
+  .btn-secondary {
+    @apply bg-brand-50 text-brand-700 border border-brand-100;
+  }
+  .btn-ghost {
+    @apply bg-transparent text-muted;
+  }
+  .btn-danger {
+    @apply text-white;
+    background: linear-gradient(180deg, #ef4444 0%, var(--color-danger) 100%);
+  }
+
+  /* Champs de formulaire */
+  .label {
+    @apply block text-[13px] font-semibold text-ink/70 mb-1.5;
+  }
+  .input {
+    @apply w-full h-12 rounded-xl bg-surface border border-line px-3.5 text-[15px] text-ink placeholder:text-muted/60 outline-none transition;
+  }
+  .input:focus {
+    @apply border-brand-400;
+    box-shadow: 0 0 0 3px rgba(46, 139, 87, 0.15);
+  }
+
+  /* Puces de statut */
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold leading-none;
+  }
+  .chip-ok {
+    background: var(--color-ok-soft);
+    color: var(--color-ok);
+  }
+  .chip-warn {
+    background: var(--color-warn-soft);
+    color: var(--color-warn);
+  }
+  .chip-danger {
+    background: var(--color-danger-soft);
+    color: var(--color-danger);
+  }
+  .chip-credit {
+    background: var(--color-credit-soft);
+    color: var(--color-credit);
+  }
+
+  /* Onglets pilule */
+  .seg {
+    @apply inline-flex items-center gap-1 rounded-full px-3.5 h-9 text-[13px] font-semibold whitespace-nowrap transition;
+  }
+  .seg-on {
+    @apply bg-brand-600 text-white;
+  }
+  .seg-off {
+    @apply bg-surface text-muted border border-line;
+  }
+}
+
+/* Zones sûres (encoche / barre gestuelle) */
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Animations utilitaires */
+@keyframes ecos-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-rise {
+  animation: ecos-rise 0.28s ease both;
+}
+@keyframes ecos-bar {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
