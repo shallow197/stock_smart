@@ -60,6 +60,34 @@ npm run dev
 
 Le frontend proxy automatiquement `/api` et `/storage` vers l'API (voir `frontend/vite.config.js`).
 
+## Déploiement (Railway)
+
+L'application se déploie en **un seul service** : Laravel sert l'API **et** la PWA
+React compilée (même origine, pas de CORS). Un `Dockerfile` à la racine construit
+le tout.
+
+1. **Base de données** — dans le projet Railway, ajouter un plugin **MySQL**.
+2. **Service applicatif** — « New → Deploy from GitHub repo », choisir ce dépôt.
+   Railway détecte le `Dockerfile` automatiquement.
+3. **Variables d'environnement** du service applicatif :
+
+   | Variable | Valeur |
+   |---|---|
+   | `APP_KEY` | `base64:...` (générer avec `php artisan key:generate --show`) |
+   | `APP_URL` | l'URL publique Railway du service |
+   | `DB_HOST` | `${{MySQL.MYSQLHOST}}` |
+   | `DB_PORT` | `${{MySQL.MYSQLPORT}}` |
+   | `DB_DATABASE` | `${{MySQL.MYSQLDATABASE}}` |
+   | `DB_USERNAME` | `${{MySQL.MYSQLUSER}}` |
+   | `DB_PASSWORD` | `${{MySQL.MYSQLPASSWORD}}` |
+
+   (`APP_ENV`, `DB_CONNECTION`, fuseau, etc. sont déjà fixés dans le `Dockerfile`.)
+4. Au premier démarrage, le conteneur lance automatiquement les **migrations** et le
+   **seed** (données de démo). Se connecter avec `ousmane@boutique.sn` / `password`.
+
+> Le nom du plugin MySQL peut différer de `MySQL` — adapter les références
+> `${{NomDuService.VARIABLE}}` en conséquence.
+
 ## Périmètre (MVP)
 
 Authentification · Tableau de bord · Produits & stock · Ventes (comptant/crédit) ·

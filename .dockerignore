@@ -1,0 +1,12 @@
+# Réduit le contexte de build : tout est reconstruit dans l'image.
+.git
+node_modules
+**/node_modules
+api/vendor
+frontend/dist
+api/.env
+api/.env.backup
+**/*.log
+.claude
+*.pdf
+*.webp
