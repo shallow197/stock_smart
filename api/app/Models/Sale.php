@@ -12,15 +12,20 @@ class Sale extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'client_id', 'invoice_number', 'payment_method',
-        'total', 'amount_paid', 'status', 'note', 'sold_at',
-    ];
+    'user_id', 'client_id', 'invoice_number', 'payment_method',
+    'total', 'subtotal', 'discount_type', 'discount_value', 'discount_amount',
+    'amount_paid', 'status', 'note', 'sold_at', 'share_token',
+];
+        
 
     protected $casts = [
-        'total' => 'decimal:2',
-        'amount_paid' => 'decimal:2',
-        'sold_at' => 'datetime',
-    ];
+    'total' => 'decimal:2',
+    'subtotal' => 'decimal:2',
+    'discount_value' => 'decimal:2',
+    'discount_amount' => 'decimal:2',
+    'amount_paid' => 'decimal:2',
+    'sold_at' => 'datetime',
+];
 
     protected $appends = ['outstanding'];
 
