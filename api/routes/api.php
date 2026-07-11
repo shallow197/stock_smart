@@ -8,8 +8,9 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\JournalController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReceiptController;    
 use App\Http\Controllers\SaleController;
-use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Route;           
 
 // --- Public ---
 Route::post('/register', [AuthController::class, 'register']);
@@ -55,10 +56,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/clients/{id}/payments', [ClientController::class, 'recordPayment']);
 
     // Ventes
-    Route::get('/sales', [SaleController::class, 'index']);
-    Route::post('/sales', [SaleController::class, 'store']);
-    Route::get('/sales/{id}', [SaleController::class, 'show']);
-    Route::post('/sales/{id}/cancel', [SaleController::class, 'cancel']);
+        Route::get('/sales', [SaleController::class, 'index']);
+        Route::post('/sales', [SaleController::class, 'store']);
+        Route::get('/sales/{id}', [SaleController::class, 'show']);
+        Route::post('/sales/{id}/cancel', [SaleController::class, 'cancel']);
+
+        // Tickets / reçus
+        Route::get('/sales/{id}/receipt/pdf', [ReceiptController::class, 'pdf']);
+        Route::post('/sales/{id}/receipt/share', [ReceiptController::class, 'share']);
 
     // Alertes
     Route::get('/alerts', [AlertController::class, 'index']);
@@ -68,3 +73,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Journal & rapport quotidien
     Route::get('/journal', [JournalController::class, 'index']);
 });
+
+// Ticket public, accessible via lien partagé (sans authentification)
+Route::get('/public/receipts/{token}', [ReceiptController::class, 'publicShow']);
+Route::get('/public/receipts/{token}/pdf', [ReceiptController::class, 'publicPdf']);
