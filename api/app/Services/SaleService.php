@@ -16,11 +16,13 @@ class SaleService
         private StockService $stock,
     ) {}
 
-    /**
+   
+   /**
      * Enregistre une vente : instantané des lignes, déduction du stock,
      * numéro de facture, mode de paiement comptant/crédit. Tout est atomique.
      *
-     * @param array<int, array{product_id:int, quantity:float, unit_price?:float}> $items
+     * @param array<int, array{product_id:int, quantity:float, unit_price?:float, discount_type?:string, discount_value?:float}> $items
+     * @param array{type:string, value:float}|null $discount Remise globale
      */
     public function create(
         User $user,
@@ -29,6 +31,7 @@ class SaleService
         ?int $clientId = null,
         ?string $note = null,
         ?Carbon $soldAt = null,
+        ?array $discount = null,
     ): Sale {
         if (empty($items)) {
             throw ValidationException::withMessages(['items' => 'Le panier est vide.']);
@@ -39,7 +42,7 @@ class SaleService
 
         $soldAt ??= now();
 
-        return DB::transaction(function () use ($user, $items, $paymentMethod, $clientId, $note, $soldAt) {
+        return DB::transaction(function () use ($user, $items, $paymentMethod, $clientId, $note, $soldAt, $discount) {
             // Charge et verrouille les produits concernés.
             $ids = array_map(fn ($i) => (int) $i['product_id'], $items);
             $products = Product::where('user_id', $user->id)
@@ -48,7 +51,7 @@ class SaleService
                 ->get()
                 ->keyBy('id');
 
-            $total = 0.0;
+            $subtotal = 0.0;
             $lines = [];
             foreach ($items as $item) {
                 $product = $products->get((int) $item['product_id']);
@@ -65,18 +68,33 @@ class SaleService
                     ]);
                 }
                 $unitPrice = isset($item['unit_price']) ? (float) $item['unit_price'] : (float) $product->sale_price;
-                $lineTotal = round($unitPrice * $qty, 2);
-                $total += $lineTotal;
-                $lines[] = compact('product', 'qty', 'unitPrice', 'lineTotal');
+                $gross = round($unitPrice * $qty, 2);
+
+                [$lineDiscountType, $lineDiscountValue, $lineDiscountAmount] = $this->computeDiscount(
+                    $gross, $item['discount_type'] ?? null, $item['discount_value'] ?? null,
+                );
+                $lineTotal = round($gross - $lineDiscountAmount, 2);
+
+                $subtotal += $lineTotal;
+                $lines[] = compact('product', 'qty', 'unitPrice', 'lineTotal', 'lineDiscountType', 'lineDiscountValue', 'lineDiscountAmount');
             }
 
-            $total = round($total, 2);
+            $subtotal = round($subtotal, 2);
+
+            [$globalType, $globalValue, $globalAmount] = $this->computeDiscount(
+                $subtotal, $discount['type'] ?? null, $discount['value'] ?? null,
+            );
+            $total = round($subtotal - $globalAmount, 2);
 
             $sale = Sale::create([
                 'user_id' => $user->id,
                 'client_id' => $clientId,
                 'invoice_number' => $this->invoices->nextNumber($user->id, $soldAt),
                 'payment_method' => $paymentMethod,
+                'subtotal' => $subtotal,
+                'discount_type' => $globalType,
+                'discount_value' => $globalValue,
+                'discount_amount' => $globalAmount,
                 'total' => $total,
                 'amount_paid' => $paymentMethod === 'cash' ? $total : 0,
                 'status' => 'completed',
@@ -91,6 +109,9 @@ class SaleService
                     'unit_price' => $line['unitPrice'],
                     'quantity' => $line['qty'],
                     'line_total' => $line['lineTotal'],
+                    'discount_type' => $line['lineDiscountType'],
+                    'discount_value' => $line['lineDiscountValue'],
+                    'discount_amount' => $line['lineDiscountAmount'],
                 ]);
 
                 // Déduction réelle du stock + trace du mouvement.
@@ -106,6 +127,25 @@ class SaleService
 
             return $sale->load('items', 'client');
         });
+    }
+
+    /**
+     * Calcule une remise (ligne ou globale) sans jamais dépasser le montant de base.
+     * @return array{0: ?string, 1: float, 2: float} [type, valeur saisie, montant réel de la remise]
+     */
+    private function computeDiscount(float $base, ?string $type, null|int|float $value): array
+    {
+        if (! $type || ! $value || $value <= 0) {
+            return [null, 0.0, 0.0];
+        }
+
+        if ($type === 'percentage') {
+            $amount = round($base * min((float) $value, 100) / 100, 2);
+        } else {
+            $amount = min((float) $value, $base);
+        }
+
+        return [$type, (float) $value, round($amount, 2)];
     }
 
     /** Annule une vente : restaure le stock de chaque ligne. */

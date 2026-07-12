@@ -11,14 +11,16 @@ class SaleItem extends Model
     use HasFactory;
 
     protected $fillable = [
-        'sale_id', 'product_id', 'product_name', 'unit_price', 'quantity', 'line_total',
-    ];
-
-    protected $casts = [
-        'unit_price' => 'decimal:2',
-        'quantity' => 'decimal:3',
-        'line_total' => 'decimal:2',
-    ];
+    'sale_id', 'product_id', 'product_name', 'unit_price', 'quantity',
+    'line_total', 'discount_type', 'discount_value', 'discount_amount',
+];
+protected $casts = [
+    'unit_price' => 'decimal:2',
+    'quantity' => 'decimal:3',
+    'line_total' => 'decimal:2',
+    'discount_value' => 'decimal:2',
+    'discount_amount' => 'decimal:2',
+];
 
     public function sale(): BelongsTo
     {

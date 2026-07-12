@@ -45,23 +45,30 @@ class SaleController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'items' => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['required', 'integer'],
-            'items.*.quantity' => ['required', 'numeric', 'gt:0'],
-            'items.*.unit_price' => ['nullable', 'numeric', 'gte:0'],
-            'payment_method' => ['required', 'in:cash,credit'],
-            'client_id' => ['nullable', 'integer',
-                \Illuminate\Validation\Rule::exists('clients', 'id')->where('user_id', $request->user()->id)],
-            'note' => ['nullable', 'string', 'max:191'],
-        ]);
+    'items' => ['required', 'array', 'min:1'],
+    'items.*.product_id' => ['required', 'integer'],
+    'items.*.quantity' => ['required', 'numeric', 'gt:0'],
+    'items.*.unit_price' => ['nullable', 'numeric', 'gte:0'],
+    'items.*.discount_type' => ['nullable', 'in:percentage,amount'],
+    'items.*.discount_value' => ['nullable', 'numeric', 'gte:0'],
+    'discount_type' => ['nullable', 'in:percentage,amount'],
+    'discount_value' => ['nullable', 'numeric', 'gte:0'],
+    'payment_method' => ['required', 'in:cash,credit'],
+    'client_id' => ['nullable', 'integer',
+        \Illuminate\Validation\Rule::exists('clients', 'id')->where('user_id', $request->user()->id)],
+    'note' => ['nullable', 'string', 'max:191'],
+]);
 
-        $sale = $this->sales->create(
-            user: $request->user(),
-            items: $data['items'],
-            paymentMethod: $data['payment_method'],
-            clientId: $data['client_id'] ?? null,
-            note: $data['note'] ?? null,
-        );
+$sale = $this->sales->create(
+    user: $request->user(),
+    items: $data['items'],
+    paymentMethod: $data['payment_method'],
+    clientId: $data['client_id'] ?? null,
+    note: $data['note'] ?? null,
+    discount: isset($data['discount_type'])
+        ? ['type' => $data['discount_type'], 'value' => $data['discount_value'] ?? 0]
+        : null,
+);
 
         return response()->json(['data' => $this->serialize($sale->loadCount('items'), true)], 201);
     }
@@ -100,29 +107,36 @@ class SaleController extends Controller
     private function serialize(Sale $sale, bool $withItems = false): array
     {
         $out = [
-            'id' => $sale->id,
-            'invoice_number' => $sale->invoice_number,
-            'client_id' => $sale->client_id,
-            'client_name' => $sale->client?->name,
-            'payment_method' => $sale->payment_method,
-            'status' => $sale->status,
-            'total' => (float) $sale->total,
-            'amount_paid' => (float) $sale->amount_paid,
-            'outstanding' => $sale->outstanding,
-            'items_count' => $sale->items_count ?? $sale->items()->count(),
-            'note' => $sale->note,
-            'sold_at' => $sale->sold_at->toIso8601String(),
-        ];
+    'id' => $sale->id,
+    'invoice_number' => $sale->invoice_number,
+    'client_id' => $sale->client_id,
+    'client_name' => $sale->client?->name,
+    'payment_method' => $sale->payment_method,
+    'status' => $sale->status,
+    'subtotal' => (float) $sale->subtotal,
+    'discount_type' => $sale->discount_type,
+    'discount_value' => (float) $sale->discount_value,
+    'discount_amount' => (float) $sale->discount_amount,
+    'total' => (float) $sale->total,
+    'amount_paid' => (float) $sale->amount_paid,
+    'outstanding' => $sale->outstanding,
+    'items_count' => $sale->items_count ?? $sale->items()->count(),
+    'note' => $sale->note,
+    'sold_at' => $sale->sold_at->toIso8601String(),
+];
 
         if ($withItems) {
             $out['items'] = $sale->items->map(fn ($i) => [
-                'id' => $i->id,
-                'product_id' => $i->product_id,
-                'product_name' => $i->product_name,
-                'unit_price' => (float) $i->unit_price,
-                'quantity' => (float) $i->quantity,
-                'line_total' => (float) $i->line_total,
-            ])->all();
+    'id' => $i->id,
+    'product_id' => $i->product_id,
+    'product_name' => $i->product_name,
+    'unit_price' => (float) $i->unit_price,
+    'quantity' => (float) $i->quantity,
+    'discount_type' => $i->discount_type,
+    'discount_value' => (float) $i->discount_value,
+    'discount_amount' => (float) $i->discount_amount,
+    'line_total' => (float) $i->line_total,
+])->all();
         }
 
         return $out;
