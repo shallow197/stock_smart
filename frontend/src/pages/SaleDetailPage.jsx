@@ -27,6 +27,36 @@ export default function SaleDetailPage() {
       reload();
     } catch (e) { toast.error(e.message); }
   }
+   async function downloadReceipt() {
+    try {
+      const token = localStorage.getItem("ecostock_token");
+      const res = await fetch(`/api/sales/${id}/receipt/pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Impossible de générer le ticket.");
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `ticket-${s.invoice_number}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      toast.error(e.message);
+    }
+  }
+
+  async function shareReceipt() {
+    try {
+      const r = await api.post(`/sales/${id}/receipt/share`);
+      await navigator.clipboard.writeText(r.url);
+      toast.success("Lien copié dans le presse-papier !");
+    } catch (e) {
+      toast.error(e.message || "Impossible de générer le lien.");
+    }
+  }
 
   return (
     <div className="app-frame lg:max-w-3xl min-h-full pb-8">
@@ -86,6 +116,16 @@ export default function SaleDetailPage() {
             <Icon name="user" size={18} /> Voir la fiche client
           </button>
         )}
+        {!cancelled && (
+        <div className="grid grid-cols-2 gap-3">
+          <button onClick={downloadReceipt} className="btn-secondary">
+            <Icon name="receipt" size={18} /> Ticket PDF
+          </button>
+          <button onClick={shareReceipt} className="btn-secondary">
+            <Icon name="share" size={18} /> Partager
+          </button>
+        </div>
+      )}
 
         {!cancelled && (
           <button onClick={cancel} className="w-full flex items-center justify-center gap-2 text-[14px] font-semibold text-danger py-3">
